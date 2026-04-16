@@ -21,8 +21,8 @@ const client = new Client({
 
 // REEMPLAZA ESTOS DATOS CON LOS TUYOS
 const TOKEN = "MTQ5MDY2NzA1NzkxNjY3ODM0Ng.GQzFoC.WKEGv8kQeBtvil96b6r-lR-lE1POjd9oP_KSjQ";
-const CANAL_ID = "1237432307120603227";
-const ROL_ID = "1491026733447512094"; // ID del rol @aventureros 
+const CANAL_ID = "843615420417835049";
+const ROL_ID = "1204479002333683732"; // ID del rol @aventureros 
 
 client.once('ready', () => {
   console.log(`✅ Conectado como ${client.user.tag}`);
