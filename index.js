@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, PollLayoutType } = require('discord.js');
+const { Client, GatewayIntentBits, PollLayoutType, ActivityType } = require('discord.js');
 const cron = require('node-cron');
 const express = require('express');
 
@@ -14,10 +14,10 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ],
-  // Reintento automático si la conexión falla
-  retryLimit: 5 
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildPresences, // <--- Vital para que el estado aparezca Online
+    GatewayIntentBits.GuildMembers
+  ]
 });
 
 const TOKEN = process.env.TOKEN;
@@ -53,8 +53,14 @@ async function enviarEncuesta() {
 // --- EVENTOS ---
 client.once('ready', () => {
   console.log(`✅ ¡LOGIN EXITOSO! Bot conectado como: ${client.user.tag}`);
+  
+  // Establecer estado Online explícitamente
+  client.user.setPresence({
+    activities: [{ name: 'Organizando partidas', type: ActivityType.Playing }],
+    status: 'online',
+  });
 
-  // Configuración del cron (Cada minuto para probar)
+  // Configuración del cron (Ejecución cada minuto para pruebas)
   cron.schedule('* * * * *', () => {
     enviarEncuesta();
   }, { timezone: "Europe/Madrid" });
@@ -62,29 +68,14 @@ client.once('ready', () => {
   console.log("📅 Cron programado (1 min).");
 });
 
-// Captura de errores de red/IP
+// Gestión de errores para evitar que el proceso se caiga
 client.on('error', (e) => console.error('🔴 Error de Discord Client:', e.message));
-client.on('warn', (e) => console.warn('⚠️ Advertencia:', e));
 
 // --- INICIO DE SESIÓN ---
 if (!TOKEN) {
-  console.error("🔴 ERROR: No se detecta la variable TOKEN en Render.");
+  console.error("🔴 ERROR: Variable TOKEN no encontrada en Environment Variables.");
 } else {
-  console.log("⏳ Iniciando conexión con Discord...");
-  
-  // Timeout de seguridad: Si en 20s no conecta, es problema de IP o Token
-  const timeout = setTimeout(() => {
-    if (!client.user) {
-      console.error("🚨 TIEMPO DE ESPERA AGOTADO: El bot no logra conectar.");
-      console.error("Posible IP baneada por Discord o Token bloqueado.");
-      console.error("Prueba a hacer 'Suspend' y 'Resume' en Render para cambiar de IP.");
-    }
-  }, 20000);
-
-  client.login(TOKEN)
-    .then(() => clearTimeout(timeout))
-    .catch(err => {
-      console.error("🔴 FALLO AL LOGUEAR:");
-      console.error(err.message);
-    });
+  client.login(TOKEN).catch(err => {
+    console.error("🔴 FALLO AL LOGUEAR:", err.message);
+  });
 }
