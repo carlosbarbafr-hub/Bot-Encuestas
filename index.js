@@ -20,7 +20,7 @@ const client = new Client({
 });
 
 const TOKEN = process.env.TOKEN;
-const CANAL_ID = "1488617412763979889";
+const CANAL_ID = "1237432307120603227";
 const ROL_ID = "1491026733447512094";
 
 // ---------------- FUNCIÓN ENCUESTA ----------------
