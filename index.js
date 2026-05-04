@@ -2,49 +2,39 @@ const { Client, GatewayIntentBits, PollLayoutType } = require('discord.js');
 const cron = require('node-cron');
 const express = require('express');
 
-// --- DEBUG GLOBAL (MUY IMPORTANTE) ---
-process.on('unhandledRejection', err => {
-  console.error('❌ UNHANDLED REJECTION:', err);
-});
-
-process.on('uncaughtException', err => {
-  console.error('❌ UNCAUGHT EXCEPTION:', err);
-});
-
-// --- SERVIDOR WEB ---
+// ---------------- WEB SERVER ----------------
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.get('/', (req, res) => {
-  res.send('✅ Bot de encuestas activo');
+app.get('/', (_, res) => {
+  res.send('Bot activo');
 });
 
 app.listen(port, () => {
-  console.log(`🌐 Web activa en puerto ${port}`);
+  console.log('🌐 Web activa en puerto', port);
 });
 
-// --- BOT DISCORD ---
+// ---------------- BOT ----------------
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// --- VARIABLES ---
 const TOKEN = process.env.TOKEN;
 const CANAL_ID = "1488617412763979889";
 const ROL_ID = "1491026733447512094";
 
-// 🔍 DEBUG TOKEN
-console.log("🔍 TOKEN length:", TOKEN ? TOKEN.length : "NO TOKEN");
+// 🔴 DEBUG REAL
+console.log("TOKEN existe:", !!TOKEN);
 
-// --- FUNCIÓN ENCUESTA ---
+// ---------------- FUNCIÓN ----------------
 async function enviarEncuesta() {
   try {
-    console.log("⏰ Ejecutando encuesta:", new Date().toLocaleString("es-ES", { timeZone: "Europe/Madrid" }));
+    console.log("⏰ Ejecutando encuesta");
 
     const channel = await client.channels.fetch(CANAL_ID);
 
     if (!channel) {
-      console.error("❌ Canal no encontrado");
+      console.log("❌ Canal no encontrado");
       return;
     }
 
@@ -68,30 +58,32 @@ async function enviarEncuesta() {
       }
     });
 
-    console.log("✅ Encuesta enviada correctamente");
-  } catch (error) {
-    console.error("❌ Error al enviar encuesta:", error);
+    console.log("✅ Encuesta enviada");
+  } catch (err) {
+    console.error("❌ Error encuesta:", err);
   }
 }
 
-// --- ARRANQUE ---
+// ---------------- LOGIN SEGURO ----------------
+async function startBot() {
+  try {
+    await client.login(TOKEN);
+    console.log("🔑 Login correcto");
+
+    console.log(`🤖 Conectado como ${client.user.tag}`);
+
+    // cron SOLO cuando está logueado
+    cron.schedule('* * * * *', enviarEncuesta, {
+      timezone: "Europe/Madrid"
+    });
+
+  } catch (err) {
+    console.error("❌ ERROR LOGIN:", err);
+  }
+}
+
 client.once('ready', () => {
-  console.log(`🤖 Conectado como ${client.user.tag}`);
-
-  // 🔹 TEST (cada minuto)
-  cron.schedule('* * * * *', enviarEncuesta, {
-    timezone: "Europe/Madrid"
-  });
-
-  // 🔹 PRODUCCIÓN (activar luego)
-  /*
-  cron.schedule('0 17 * * 0', enviarEncuesta, {
-    timezone: "Europe/Madrid"
-  });
-  */
+  console.log("🟢 Bot listo");
 });
 
-// --- LOGIN ---
-client.login(TOKEN)
-  .then(() => console.log("🔑 Login correcto"))
-  .catch(err => console.error("❌ Error login:", err));
+startBot();
