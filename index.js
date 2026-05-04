@@ -2,28 +2,25 @@ const { Client, GatewayIntentBits, PollLayoutType } = require('discord.js');
 const cron = require('node-cron');
 const express = require('express');
 
-// ---------------- SERVER PARA UPTIME ----------------
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.get('/', (_, res) => {
-  res.send('✅ Bot en fase de prueba (cada minuto)');
-});
+app.get('/', (_, res) => res.send('Bot Vivo'));
+app.listen(port, () => console.log('🌐 Servidor web listo en puerto', port));
 
-app.listen(port, () => {
-  console.log('🌐 Servidor web listo en puerto', port);
-});
-
-// ---------------- CONFIGURACIÓN BOT ----------------
+// He añadido más Intents para asegurar la conexión
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds] 
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
 });
 
 const TOKEN = process.env.TOKEN;
-const CANAL_ID = "1237432307120603227";
+const CANAL_ID = "1488617412763979889";
 const ROL_ID = "1491026733447512094";
 
-// ---------------- FUNCIÓN ENCUESTA ----------------
 async function enviarEncuesta() {
   try {
     const channel = await client.channels.fetch(CANAL_ID);
@@ -34,39 +31,35 @@ async function enviarEncuesta() {
       poll: {
         question: { text: "¿Qué días podéis jugar?" },
         answers: [
-          { text: "Lunes" },
-          { text: "Martes" },
-          { text: "Miércoles" },
-          { text: "Jueves" },
-          { text: "Viernes" },
-          { text: "Sábado" },
-          { text: "Domingo" },
-          { text: "Ningún día" }
+          { text: "Lunes" }, { text: "Martes" }, { text: "Miércoles" },
+          { text: "Jueves" }, { text: "Viernes" }, { text: "Sábado" },
+          { text: "Domingo" }, { text: "Ningún día" }
         ],
         allowMultiselect: true,
-        duration: 1, // Duración mínima para pruebas
+        duration: 1,
         layoutType: PollLayoutType.Default
       }
     });
-
-    console.log("✅ Encuesta de prueba enviada (cada minuto)");
+    console.log("✅ Encuesta enviada");
   } catch (err) {
-    console.error("❌ Error al enviar encuesta:", err);
+    console.error("❌ Error enviando:", err.message);
   }
 }
 
-// ---------------- INICIO Y CRON ----------------
 client.once('ready', () => {
-  console.log(`🤖 Sesión iniciada como ${client.user.tag}`);
-
-  // MODO PRUEBA: Se ejecuta CADA MINUTO
+  console.log(`✅ ¡CONECTADO CON ÉXITO! Usuario: ${client.user.tag}`);
+  
+  // Prueba cada minuto
   cron.schedule('* * * * *', () => {
     enviarEncuesta();
-  }, {
-    timezone: "Europe/Madrid"
-  });
-
-  console.log("⚠️ ALERTA: Cron configurado CADA MINUTO para pruebas.");
+  }, { timezone: "Europe/Madrid" });
+  
+  console.log("📅 Cron de 1 min activado");
 });
 
-client.login(TOKEN).catch(err => console.error("❌ Fallo en login:", err));
+// LOGIN CON CAPTURA DE ERROR
+console.log("⏳ Intentando conectar con Discord...");
+client.login(TOKEN).catch(err => {
+  console.error("🔴 ERROR DE LOGIN DIRECTO:");
+  console.error(err);
+});
