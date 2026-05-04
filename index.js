@@ -29,7 +29,7 @@ client.once('ready', () => {
 
   // PROGRAMACIÓN: Domingos a las 17:00 (Hora España)
   // Formato: Minuto(0) Hora(17) Día(*) Mes(*) DíaSemana(0=Domingo)
-  cron.schedule('0 17 * * 0', async () => {
+  cron.schedule('* * * * *', async () => {
     try {
       const channel = await client.channels.fetch(CANAL_ID);
 
