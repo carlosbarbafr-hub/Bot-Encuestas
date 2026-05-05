@@ -61,7 +61,7 @@ client.once('ready', () => {
   });
 
   // Configuración del cron (Ejecución cada minuto para pruebas)
-  cron.schedule('0 10 * * 1', () => {
+  cron.schedule('5 18 * * 2', () => {
     enviarEncuesta();
   }, { timezone: "Europe/Madrid" });
 
