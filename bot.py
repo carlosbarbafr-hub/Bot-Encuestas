@@ -2,13 +2,28 @@ import discord
 from discord.ext import commands, tasks
 import os
 import datetime
+from flask import Flask
+from threading import Thread
 
-# --- CONFIGURACIÓN ---
-# Asegúrate de poner aquí el ID de tu canal (sin comillas, solo números)
-CHANNEL_ID = 1237432307120603227 
+# --- SERVIDOR WEB PARA ENGAÑAR A RENDER ---
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot esta vivo!"
+
+def run():
+    # Render usa el puerto 10000 por defecto
+    app.run(host='0.0.0.0', port=10000)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# --- CONFIGURACIÓN DEL BOT ---
+CHANNEL_ID = 1237432307120603227  # REEMPLAZA CON TU ID
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# --- BOT SETUP ---
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -18,7 +33,6 @@ async def on_ready():
     print(f'✅ Bot conectado como: {bot.user.name}')
     if not enviar_encuesta.is_running():
         enviar_encuesta.start()
-        print("⏰ Tarea programada iniciada (cada 1 minuto)")
 
 @tasks.loop(minutes=1.0)
 async def enviar_encuesta():
@@ -30,22 +44,17 @@ async def enviar_encuesta():
                 duration=datetime.timedelta(weeks=1),
                 multiple=True
             )
-            
-            opciones = ["L", "M", "X", "J", "V", "S", "D", "Ningun dia"]
-            for opcion in opciones:
-                encuesta.add_answer(text=opcion)
+            for opc in ["L", "M", "X", "J", "V", "S", "D", "Ningun dia"]:
+                encuesta.add_answer(text=opc)
             
             await channel.send(poll=encuesta)
-            print(f"📊 Encuesta enviada correctamente a las {datetime.datetime.now()}")
+            print("📊 Encuesta enviada.")
         except Exception as e:
-            print(f"❌ Error al enviar la encuesta: {e}")
-    else:
-        print(f"⚠️ No se encontró el canal con ID: {CHANNEL_ID}")
+            print(f"❌ Error: {e}")
 
-# --- VALIDACIÓN DE TOKEN ---
-if TOKEN is None or TOKEN == "":
-    print("❌ ERROR CRÍTICO: No se encontró la variable 'DISCORD_TOKEN'.")
-    print("Revisa en Render: Settings -> Environment -> Add Environment Variable")
-else:
-    # Eliminamos espacios en blanco accidentales que a veces se cuelan al copiar
+# --- INICIO ---
+if TOKEN:
+    keep_alive() # Esto arranca el servidor web en segundo plano
     bot.run(TOKEN.strip())
+else:
+    print("❌ Falta el TOKEN en Environment Variables")
