@@ -6,83 +6,82 @@ import asyncio
 from flask import Flask
 from threading import Thread
 
-# --- 1. SERVIDOR WEB (Para que Render no cierre el bot) ---
+# --- 1. CONFIGURACIÓN DEL SERVIDOR WEB ---
 app = Flask('')
 
 @app.route('/')
 def home():
-    return "Bot esta vivo y funcionando!"
+    return "Servidor del Bot activo"
 
 def run():
-    # Render usa la variable de entorno PORT
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    try:
+        # Render requiere que escuchemos en un puerto
+        port = int(os.environ.get("PORT", 10000))
+        print(f"🌐 Iniciando Flask en el puerto {port}...")
+        app.run(host='0.0.0.0', port=port)
+    except Exception as e:
+        print(f"❌ Error en el servidor Flask: {e}")
 
 def keep_alive():
     t = Thread(target=run)
-    t.daemon = True # Esto permite que el hilo se cierre si el proceso principal muere
+    t.daemon = True
     t.start()
+    print("🚀 Hilo de Keep_Alive iniciado.")
 
 # --- 2. CONFIGURACIÓN DEL BOT ---
-# Asegúrate de que el ID sea correcto y sea un número (int)
 CHANNEL_ID = 1237432307120603227 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# Configuración de los permisos (Intents)
 intents = discord.Intents.default()
-intents.message_content = True  # Necesario para bots modernos
+intents.message_content = True
 intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# --- 3. TAREA AUTOMÁTICA (Encuesta cada semana) ---
-# He puesto el intervalo en 168 horas (1 semana) para evitar baneos por spam
-@tasks.loop(hours=168.0)
+# --- 3. TAREA DE ENCUESTA ---
+@tasks.loop(hours=168.0) # Una vez a la semana
 async def enviar_encuesta():
+    print("📡 Intentando enviar encuesta programada...")
     channel = bot.get_channel(CHANNEL_ID)
     if channel:
         try:
-            # Crear la encuesta (Solo funciona en discord.py 2.4+)
             encuesta = discord.Poll(
                 question="¿Qué días puedes jugar (ROL)?",
                 duration=datetime.timedelta(days=7),
                 multiple=True
             )
-            
-            opciones = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo", "Ninguno"]
-            for opc in opciones:
+            for opc in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo", "Ninguno"]:
                 encuesta.add_answer(text=opc)
             
             await channel.send(poll=encuesta)
-            print(f"📊 Encuesta enviada con éxito: {datetime.datetime.now()}")
+            print("📊 Encuesta enviada correctamente.")
         except Exception as e:
-            print(f"❌ Error al enviar la encuesta: {e}")
+            print(f"❌ Error enviando encuesta: {e}")
     else:
-        print(f"❌ No se encontró el canal con ID {CHANNEL_ID}. Revisa los permisos del bot.")
+        print(f"❌ No se encontró el canal {CHANNEL_ID}")
 
 # --- 4. EVENTOS ---
 @bot.event
 async def on_ready():
-    print(f'✅ Bot conectado con éxito como: {bot.user.name}')
-    
-    # Pequeña espera para asegurar que la conexión es estable antes de iniciar el loop
+    print(f'✅ LOGUEADO: {bot.user.name} (ID: {bot.user.id})')
     await asyncio.sleep(5)
-    
     if not enviar_encuesta.is_running():
         enviar_encuesta.start()
+        print("⏰ Loop de encuestas iniciado.")
 
-# --- 5. EJECUCIÓN ---
-if TOKEN:
-    print("🚀 Arrancando servidor de monitoreo...")
-    keep_alive()  # Lanzamos Flask primero
-    
-    print("🤖 Intentando conectar a Discord...")
-    try:
-        # Usamos strip() para limpiar espacios accidentales del token
-        bot.run(TOKEN.strip())
-    except discord.errors.LoginFailure:
-        print("❌ Error: El Token de Discord es inválido. Revísalo en Render.")
-    except Exception as e:
-        print(f"❌ Error al iniciar el bot: {e}")
-else:
-    print("❌ ERROR: No se encontró la variable 'DISCORD_TOKEN' en el panel de Render.")
+# --- 5. ARRANQUE ---
+if __name__ == "__main__":
+    if not TOKEN:
+        print("❌ ERROR CRÍTICO: No se encontró la variable DISCORD_TOKEN.")
+    else:
+        print("1️⃣ Iniciando servidor web...")
+        keep_alive()
+        
+        print("2️⃣ Iniciando conexión con Discord...")
+        try:
+            # strip() elimina espacios o saltos de línea invisibles
+            bot.run(TOKEN.strip())
+        except discord.errors.LoginFailure:
+            print("❌ ERROR: El Token es incorrecto o ha sido reseteado.")
+        except Exception as e:
+            print(f"❌ ERROR AL EJECUTAR EL BOT: {e}")
