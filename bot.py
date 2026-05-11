@@ -16,7 +16,13 @@ if TOKEN is None:
 # CONFIGURACIÓN
 # =========================================================
 
-CHANNEL_ID = 1237432307120603227  # Cambia esto por tu canal
+CHANNEL_ID = 843615420417835049
+
+# Hora española (Madrid)
+SPAIN_TZ = datetime.timezone(datetime.timedelta(hours=2))
+
+# Domingo 17:00
+ENCUESTA_HORA = datetime.time(hour=17, minute=0, tzinfo=SPAIN_TZ)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -40,27 +46,24 @@ async def on_ready():
         enviar_encuesta.start()
         print("📅 Sistema de encuestas iniciado.")
 
-@bot.event
-async def on_disconnect():
-    print("⚠️ Bot desconectado.")
-
-@bot.event
-async def on_resumed():
-    print("🔄 Conexión restaurada.")
-
 # =========================================================
-# ENCUESTA SEMANAL
+# ENCUESTA
 # =========================================================
 
-@tasks.loop(hours=168)  # Cada 7 días
+@tasks.loop(time=ENCUESTA_HORA)
 async def enviar_encuesta():
+
+    ahora = datetime.datetime.now(SPAIN_TZ)
+
+    # Solo domingos
+    if ahora.weekday() != 6:
+        return
 
     print("⏳ Enviando encuesta semanal...")
 
     try:
         channel = bot.get_channel(CHANNEL_ID)
 
-        # Si no está cacheado
         if channel is None:
             channel = await bot.fetch_channel(CHANNEL_ID)
 
@@ -98,6 +101,35 @@ async def enviar_encuesta():
 @bot.command()
 async def ping(ctx):
     await ctx.send("🏓 Pong!")
+
+# =========================================================
+# COMANDO MANUAL PARA PROBAR
+# =========================================================
+
+@bot.command()
+async def encuesta(ctx):
+
+    encuesta = discord.Poll(
+        question="¿Qué días puedes jugar?",
+        duration=datetime.timedelta(days=7),
+        multiple=True
+    )
+
+    opciones = [
+        "Lunes",
+        "Martes",
+        "Miércoles",
+        "Jueves",
+        "Viernes",
+        "Sábado",
+        "Domingo",
+        "Ninguno"
+    ]
+
+    for opcion in opciones:
+        encuesta.add_answer(text=opcion)
+
+    await ctx.send(poll=encuesta)
 
 # =========================================================
 # INICIO
