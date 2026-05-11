@@ -2,86 +2,69 @@ import discord
 from discord.ext import commands, tasks
 import os
 import datetime
-import asyncio
 from flask import Flask
 from threading import Thread
 
-# --- 1. CONFIGURACIÓN DEL SERVIDOR WEB ---
+# --- CONFIGURACIÓN DE FLASK PARA RENDER ---
 app = Flask('')
 
 @app.route('/')
-def home():
-    return "Servidor del Bot activo"
+def health_check():
+    return "Bot is running", 200
 
 def run():
-    try:
-        # Render requiere que escuchemos en un puerto
-        port = int(os.environ.get("PORT", 10000))
-        print(f"🌐 Iniciando Flask en el puerto {port}...")
-        app.run(host='0.0.0.0', port=port)
-    except Exception as e:
-        print(f"❌ Error en el servidor Flask: {e}")
+    # Render usa la variable de entorno PORT, por defecto 10000
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
     t = Thread(target=run)
     t.daemon = True
     t.start()
-    print("🚀 Hilo de Keep_Alive iniciado.")
 
-# --- 2. CONFIGURACIÓN DEL BOT ---
-CHANNEL_ID = 1237432307120603227 
+# --- CONFIGURACIÓN DEL BOT DE DISCORD ---
 TOKEN = os.getenv("DISCORD_TOKEN")
+CHANNEL_ID = 1237432307120603227 # ID de tu canal
 
 intents = discord.Intents.default()
 intents.message_content = True
-intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# --- 3. TAREA DE ENCUESTA ---
 @tasks.loop(hours=168.0) # Una vez a la semana
 async def enviar_encuesta():
-    print("📡 Intentando enviar encuesta programada...")
     channel = bot.get_channel(CHANNEL_ID)
     if channel:
         try:
             encuesta = discord.Poll(
-                question="¿Qué días puedes jugar (ROL)?",
+                question="¿Qué días puedes jugar?",
                 duration=datetime.timedelta(days=7),
                 multiple=True
             )
-            for opc in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo", "Ninguno"]:
+            for opc in ["L", "M", "X", "J", "V", "S", "D", "Ninguno"]:
                 encuesta.add_answer(text=opc)
-            
             await channel.send(poll=encuesta)
-            print("📊 Encuesta enviada correctamente.")
+            print("Encuesta enviada.")
         except Exception as e:
-            print(f"❌ Error enviando encuesta: {e}")
-    else:
-        print(f"❌ No se encontró el canal {CHANNEL_ID}")
+            print(f"Error encuesta: {e}")
 
-# --- 4. EVENTOS ---
 @bot.event
 async def on_ready():
-    print(f'✅ LOGUEADO: {bot.user.name} (ID: {bot.user.id})')
-    await asyncio.sleep(5)
+    print(f'✅ Bot online: {bot.user}')
     if not enviar_encuesta.is_running():
         enviar_encuesta.start()
-        print("⏰ Loop de encuestas iniciado.")
 
-# --- 5. ARRANQUE ---
+# --- EJECUCIÓN ---
 if __name__ == "__main__":
     if not TOKEN:
-        print("❌ ERROR CRÍTICO: No se encontró la variable DISCORD_TOKEN.")
+        print("❌ Error: No hay TOKEN en las variables de entorno.")
     else:
-        print("1️⃣ Iniciando servidor web...")
+        # IMPORTANTE: Arrancamos Flask PRIMERO para que Render vea el puerto abierto
+        print("🚀 Iniciando servidor web de salud...")
         keep_alive()
         
-        print("2️⃣ Iniciando conexión con Discord...")
+        print("🤖 Conectando a Discord...")
         try:
-            # strip() elimina espacios o saltos de línea invisibles
             bot.run(TOKEN.strip())
-        except discord.errors.LoginFailure:
-            print("❌ ERROR: El Token es incorrecto o ha sido reseteado.")
         except Exception as e:
-            print(f"❌ ERROR AL EJECUTAR EL BOT: {e}")
+            print(f"❌ Error al ejecutar el bot: {e}")
