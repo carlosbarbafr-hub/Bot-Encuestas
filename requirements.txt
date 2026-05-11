@@ -1,2 +1,2 @@
-discord.py
-flask
+discord.py==2.7.1
+PyNaCl==1.5.0
