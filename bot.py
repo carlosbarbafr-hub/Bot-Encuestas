@@ -46,6 +46,10 @@ async def on_ready():
         enviar_encuesta.start()
         print("📅 Sistema de encuestas iniciado.")
 
+    if not enviar_recordatorio.is_running():
+        enviar_recordatorio.start()
+        print("📅 Sistema de recordatorios iniciado.")
+
 # =========================================================
 # ENCUESTA
 # =========================================================
@@ -93,6 +97,36 @@ async def enviar_encuesta():
 
     except Exception as e:
         print(f"❌ Error enviando encuesta: {e}")
+
+# =========================================================
+# RECORDATORIO SEMANAL (Martes, Viernes, Domingo)
+# =========================================================
+
+RECORDATORIO_HORA = datetime.time(hour=16, minute=59, tzinfo=SPAIN_TZ)
+
+@tasks.loop(time=RECORDATORIO_HORA)
+async def enviar_recordatorio():
+
+    ahora = datetime.datetime.now(SPAIN_TZ)
+
+    # Solo martes (1), viernes (4) y domingo (6)
+    if ahora.weekday() not in (1, 4, 6):
+        return
+
+    print("⏳ Enviando recordatorio...")
+
+    try:
+        channel = bot.get_channel(CHANNEL_ID)
+
+        if channel is None:
+            channel = await bot.fetch_channel(CHANNEL_ID)
+
+        await channel.send("¡Recordatorio! Hoy es dia de PERIODO! Vended vuestras almas o deuda publica🪙.")
+
+        print("✅ Recordatorio enviado correctamente.")
+
+    except Exception as e:
+        print(f"❌ Error enviando recordatorio: {e}")
 
 # =========================================================
 # COMANDO TEST
