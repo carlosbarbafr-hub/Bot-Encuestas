@@ -121,7 +121,7 @@ async def enviar_recordatorio():
         if channel is None:
             channel = await bot.fetch_channel(CHANNEL_ID)
 
-        await channel.send("¡Recordatorio! Hoy es dia de PERIODO! Vended vuestras almas o deuda publica🪙.")
+        await channel.send("¡Recordatorio! No olvidéis confirmar vuestra disponibilidad.")
 
         print("✅ Recordatorio enviado correctamente.")
 
