@@ -102,15 +102,20 @@ async def enviar_encuesta():
 # RECORDATORIO SEMANAL (Martes, Viernes, Domingo)
 # =========================================================
 
-RECORDATORIO_HORA = datetime.time(hour=16, minute=59, tzinfo=SPAIN_TZ)
+recordatorio_enviado_hoy = None
 
-@tasks.loop(time=RECORDATORIO_HORA)
+# Se ejecuta exactamente a las 16:59 (hora española)
+@tasks.loop(time=datetime.time(hour=16, minute=59, tzinfo=SPAIN_TZ))
 async def enviar_recordatorio():
-
+    global recordatorio_enviado_hoy
     ahora = datetime.datetime.now(SPAIN_TZ)
 
     # Solo martes (1), viernes (4) y domingo (6)
     if ahora.weekday() not in (1, 4, 6):
+        return
+
+    # Evitar doble envio el mismo dia
+    if recordatorio_enviado_hoy == ahora.date():
         return
 
     print("⏳ Enviando recordatorio...")
@@ -124,6 +129,7 @@ async def enviar_recordatorio():
         await channel.send("¡RECORDATORIO! Los libros de cuentas se han abierto. Es la hora de ajustar cuentas, si quereis ganar dinero o almas haced el periodo!")
 
         print("✅ Recordatorio enviado correctamente.")
+        recordatorio_enviado_hoy = ahora.date()
 
     except Exception as e:
         print(f"❌ Error enviando recordatorio: {e}")
