@@ -174,6 +174,14 @@ async def encuesta(ctx):
     await ctx.send(poll=encuesta)
 
 # =========================================================
+# COMANDO PERIODO (reenviar recordatorio manualmente)
+# =========================================================
+
+@bot.command()
+async def periodo(ctx):
+    await ctx.send("¡RECORDATORIO! Los libros de cuentas se han abierto. Es la hora de ajustar cuentas, si quereis ganar dinero o almas haced el periodo!")
+
+# =========================================================
 # INICIO
 # =========================================================
 
