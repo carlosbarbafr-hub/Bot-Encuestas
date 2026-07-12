@@ -21,8 +21,10 @@ CHANNEL_ID = 843615420417835049
 # Hora española (Madrid)
 SPAIN_TZ = datetime.timezone(datetime.timedelta(hours=2))
 
-# Domingo 17:00
-ENCUESTA_HORA = datetime.time(hour=17, minute=0, tzinfo=SPAIN_TZ)
+# Hora UTC para evitar bugs con tzinfo en @tasks.loop
+# Railway usa UTC como sistema, asi que naive = UTC
+# 15:00 UTC = 17:00 CEST (Espana en verano)
+ENCUESTA_HORA_UTC = datetime.time(hour=15, minute=0)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -54,7 +56,7 @@ async def on_ready():
 # ENCUESTA
 # =========================================================
 
-@tasks.loop(time=ENCUESTA_HORA)
+@tasks.loop(time=ENCUESTA_HORA_UTC)
 async def enviar_encuesta():
 
     ahora = datetime.datetime.now(SPAIN_TZ)
@@ -104,8 +106,8 @@ async def enviar_encuesta():
 
 recordatorio_enviado_hoy = None
 
-# Se ejecuta exactamente a las 16:59 (hora española)
-@tasks.loop(time=datetime.time(hour=16, minute=59, tzinfo=SPAIN_TZ))
+# Se ejecuta exactamente a las 16:59 (hora española) = 14:59 UTC
+@tasks.loop(time=datetime.time(hour=14, minute=59))
 async def enviar_recordatorio():
     global recordatorio_enviado_hoy
     ahora = datetime.datetime.now(SPAIN_TZ)
