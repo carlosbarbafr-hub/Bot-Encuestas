@@ -2,6 +2,8 @@ import os
 import datetime
 import discord
 from discord.ext import commands, tasks
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
 
 # =========================================================
 # TOKEN
@@ -184,6 +186,28 @@ async def periodo(ctx):
 # =========================================================
 # INICIO
 # =========================================================
+
+# =========================================================
+# HEALTH CHECK (para mantener despierto en Render Free)
+# =========================================================
+
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+    def log_message(self, *a, **k):
+        pass  # silenciar logs
+
+def run_health_server():
+    port = int(os.getenv("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), HealthHandler)
+    print(f"💚 Health check server en puerto {port}")
+    server.serve_forever()
+
+thread = threading.Thread(target=run_health_server, daemon=True)
+thread.start()
 
 print("🤖 Iniciando bot...")
 
