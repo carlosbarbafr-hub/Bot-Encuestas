@@ -206,9 +206,16 @@ def run_health_server():
     print(f"💚 Health check server en puerto {port}")
     server.serve_forever()
 
-thread = threading.Thread(target=run_health_server, daemon=True)
+thread = threading.Thread(target=run_health_server, daemon=False)
 thread.start()
 
 print("🤖 Iniciando bot...")
 
-bot.run(TOKEN.strip())
+try:
+    bot.run(TOKEN.strip())
+except Exception as e:
+    print(f"❌ Error fatal del bot: {e}")
+    # El health check sigue vivo, Render no se queja del puerto
+    while True:
+        import time
+        time.sleep(60)
