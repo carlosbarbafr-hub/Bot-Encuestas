@@ -23,11 +23,7 @@ CHANNEL_ID = 843615420417835049
 # Hora española (Madrid)
 SPAIN_TZ = datetime.timezone(datetime.timedelta(hours=2))
 
-# Hora UTC para evitar bugs con tzinfo en @tasks.loop
-# Railway usa UTC como sistema, asi que naive = UTC
 # 15:00 UTC = 17:00 CEST (Espana en verano)
-ENCUESTA_HORA_UTC = datetime.time(hour=15, minute=0)
-
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
@@ -55,16 +51,13 @@ async def on_ready():
         print("📅 Sistema de recordatorios iniciado.")
 
     # Catch-up: si es domingo y ya pasaron las 17:00, enviar ya
-    ahora = datetime.datetime.now(SPAIN_TZ)
-    if ahora.weekday() == 6 and ahora.hour >= 17 and encuesta_enviada_hoy != ahora.date():
-        await enviar_encuesta()
+    await _enviar_encuesta()
 
 # =========================================================
 # ENCUESTA
 # =========================================================
 
-@tasks.loop(minutes=1)
-async def enviar_encuesta():
+async def _enviar_encuesta():
     global encuesta_enviada_hoy
 
     ahora = datetime.datetime.now(SPAIN_TZ)
@@ -116,6 +109,11 @@ async def enviar_encuesta():
 
     except Exception as e:
         print(f"❌ Error enviando encuesta: {e}")
+
+
+@tasks.loop(minutes=1)
+async def enviar_encuesta():
+    await _enviar_encuesta()
 
 # =========================================================
 # RECORDATORIO SEMANAL (Martes, Viernes, Domingo)
