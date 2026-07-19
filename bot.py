@@ -54,17 +54,31 @@ async def on_ready():
         enviar_recordatorio.start()
         print("📅 Sistema de recordatorios iniciado.")
 
+    # Catch-up: si es domingo y ya pasaron las 17:00, enviar ya
+    ahora = datetime.datetime.now(SPAIN_TZ)
+    if ahora.weekday() == 6 and ahora.hour >= 17 and encuesta_enviada_hoy != ahora.date():
+        await enviar_encuesta()
+
 # =========================================================
 # ENCUESTA
 # =========================================================
 
-@tasks.loop(time=ENCUESTA_HORA_UTC)
+@tasks.loop(minutes=1)
 async def enviar_encuesta():
+    global encuesta_enviada_hoy
 
     ahora = datetime.datetime.now(SPAIN_TZ)
 
     # Solo domingos
     if ahora.weekday() != 6:
+        return
+
+    # Solo a partir de las 17:00 (hora España), el guard diario evita duplicados
+    if ahora.hour < 17:
+        return
+
+    # Evitar doble envío el mismo domingo
+    if encuesta_enviada_hoy == ahora.date():
         return
 
     print("⏳ Enviando encuesta semanal...")
@@ -98,6 +112,7 @@ async def enviar_encuesta():
         await channel.send(poll=encuesta)
 
         print("✅ Encuesta enviada correctamente.")
+        encuesta_enviada_hoy = ahora.date()
 
     except Exception as e:
         print(f"❌ Error enviando encuesta: {e}")
@@ -106,6 +121,7 @@ async def enviar_encuesta():
 # RECORDATORIO SEMANAL (Martes, Viernes, Domingo)
 # =========================================================
 
+encuesta_enviada_hoy = None
 recordatorio_enviado_hoy = None
 
 # Se ejecuta exactamente a las 16:59 (hora española) = 14:59 UTC
