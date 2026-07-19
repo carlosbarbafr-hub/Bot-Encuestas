@@ -111,7 +111,7 @@ async def _enviar_encuesta():
         print(f"❌ Error enviando encuesta: {e}")
 
 
-@tasks.loop(minutes=1)
+@tasks.loop(hours=1)
 async def enviar_encuesta():
     await _enviar_encuesta()
 
